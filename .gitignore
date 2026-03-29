@@ -1,0 +1,56 @@
+# ── Generated data & models ─────────────────────────────────
+data/
+checkpoints/
+*.pt
+*.bin
+*.goby
+*.onnx
+
+# ── Compiled binaries ──────────────────────────────────────
+csrc/goby
+csrc/goby_debug
+*.o
+*.so
+*.dylib
+*.out
+
+# ── Python ──────────────────────────────────────────────────
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Notebook checkpoints ───────────────────────────────────
+.ipynb_checkpoints/
+
+# ── OS ──────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDE / Editor ────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ── Logs & temp ─────────────────────────────────────────────
+*.log
+*.tmp
+*.bak

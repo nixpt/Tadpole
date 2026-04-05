@@ -16,23 +16,26 @@ class GuppyInference:
         self.device = torch.device(device)
         self.tokenizer = Tokenizer.from_file(tokenizer_path)
 
+        import os
         ckpt = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
 
-        # Support both HF standard (state_dict only) and legacy (full checkpoint) format
-        if "model_state_dict" in ckpt:
-            # Legacy format: {config, model_state_dict, ...}
+        # Detect format: legacy checkpoint has "model_state_dict" key,
+        # HF standard is just the state_dict (first key is a weight like "tok_emb.weight")
+        is_legacy = isinstance(ckpt, dict) and "model_state_dict" in ckpt
+
+        if is_legacy:
             valid_fields = {f.name for f in GuppyConfig.__dataclass_fields__.values()}
             self.config = GuppyConfig(**{k: v for k, v in ckpt["config"].items() if k in valid_fields})
             state_dict = ckpt["model_state_dict"]
         else:
-            # HF standard format: state_dict only, config from separate file
-            import os
-            config_path = os.path.join(os.path.dirname(checkpoint_path), "config.json")
+            # HF standard: load config from config.json next to the model file
+            config_dir = os.path.dirname(os.path.abspath(checkpoint_path))
+            config_path = os.path.join(config_dir, "config.json")
             with open(config_path) as f:
                 cfg = json.load(f)
             self.config = GuppyConfig(
                 vocab_size=cfg["vocab_size"],
-                max_seq_len=cfg["max_position_embeddings"],
+                max_seq_len=cfg.get("max_position_embeddings", 128),
                 d_model=cfg["hidden_size"],
                 n_layers=cfg["num_hidden_layers"],
                 n_heads=cfg["num_attention_heads"],

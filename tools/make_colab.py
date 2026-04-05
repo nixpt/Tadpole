@@ -299,7 +299,7 @@ def build():
 
     cells.append(code(
         "from huggingface_hub import HfApi, login\n"
-        "import os\n"
+        "import torch, json, os\n"
         "\n"
         "HF_TOKEN = os.environ.get('HF_TOKEN', '')  # Or paste your token here\n"
         "HF_REPO = os.environ.get('HF_REPO', 'arman-bd/guppylm-9M')  # Or change this\n"
@@ -311,18 +311,38 @@ def build():
         "    api = HfApi()\n"
         "    api.create_repo(HF_REPO, exist_ok=True)\n"
         "\n"
-        "    # Upload model checkpoint, tokenizer, and source files\n"
-        "    for path in ['checkpoints/best_model.pt', 'checkpoints/config.json',\n"
-        "                 'data/tokenizer.json', 'model.py', 'config.py', 'inference.py']:\n"
-        "        if os.path.exists(path):\n"
-        "            api.upload_file(\n"
-        "                path_or_fileobj=path,\n"
-        "                path_in_repo=path,\n"
-        "                repo_id=HF_REPO,\n"
-        "            )\n"
-        "            print(f'  Uploaded {path}')\n"
+        "    # Convert to HuggingFace standard format\n"
+        "    os.makedirs('hf_export', exist_ok=True)\n"
         "\n"
-        "    print(f'\\nDone! https://huggingface.co/{HF_REPO}')"
+        "    # pytorch_model.bin — state_dict only\n"
+        "    ckpt = torch.load('checkpoints/best_model.pt', map_location='cpu', weights_only=False)\n"
+        "    torch.save(ckpt['model_state_dict'], 'hf_export/pytorch_model.bin')\n"
+        "\n"
+        "    # config.json — model architecture\n"
+        "    cfg = ckpt['config']\n"
+        "    with open('hf_export/config.json', 'w') as f:\n"
+        "        json.dump({\n"
+        "            'model_type': 'guppylm',\n"
+        "            'architectures': ['GuppyLM'],\n"
+        "            'vocab_size': cfg['vocab_size'],\n"
+        "            'max_position_embeddings': cfg['max_seq_len'],\n"
+        "            'hidden_size': cfg['d_model'],\n"
+        "            'num_hidden_layers': cfg['n_layers'],\n"
+        "            'num_attention_heads': cfg['n_heads'],\n"
+        "            'intermediate_size': cfg['ffn_hidden'],\n"
+        "            'hidden_dropout_prob': cfg.get('dropout', 0.1),\n"
+        "            'pad_token_id': cfg['pad_id'],\n"
+        "            'bos_token_id': cfg['bos_id'],\n"
+        "            'eos_token_id': cfg['eos_id'],\n"
+        "        }, f, indent=2)\n"
+        "\n"
+        "    # tokenizer.json — at root\n"
+        "    import shutil\n"
+        "    shutil.copy('data/tokenizer.json', 'hf_export/tokenizer.json')\n"
+        "\n"
+        "    # Upload\n"
+        "    api.upload_folder(folder_path='hf_export', repo_id=HF_REPO, repo_type='model')\n"
+        "    print(f'Done! https://huggingface.co/{HF_REPO}')"
     ))
 
     # ══════════════════════════════════════════════════════════════════
@@ -404,39 +424,31 @@ def build_use():
         "print(f'Working dir: {os.getcwd()}')"
     ))
 
-    # ── Download model ─────────────────────────────────────────────
+    # ── Write source files ─────────────────────────────────────────
 
     cells.append(md(
-        "## 2. Download Model\n"
+        "## 2. Download Model & Write Source\n"
         "\n"
-        "Download the pre-trained model, tokenizer, and inference code from HuggingFace."
+        "Download the pre-trained weights from HuggingFace and write the inference code."
     ))
+
+    # Write model source files needed for inference
+    for display_name in ["config.py", "model.py", "inference.py"]:
+        src_path = f"guppylm/{display_name}"
+        full_path = os.path.join(PROJECT_ROOT, src_path)
+        content = read_for_colab(full_path)
+        cells.append(code(f"%%writefile {display_name}\n{content}"))
 
     cells.append(code(
         "from huggingface_hub import hf_hub_download\n"
-        "import os\n"
         "\n"
         "HF_REPO = 'arman-bd/guppylm-9M'\n"
         "\n"
-        "files = [\n"
-        "    ('checkpoints/best_model.pt', 'checkpoints'),\n"
-        "    ('checkpoints/config.json', 'checkpoints'),\n"
-        "    ('data/tokenizer.json', 'data'),\n"
-        "    ('model.py', '.'),\n"
-        "    ('config.py', '.'),\n"
-        "    ('inference.py', '.'),\n"
-        "]\n"
-        "\n"
-        "for filename, subdir in files:\n"
-        "    os.makedirs(subdir, exist_ok=True)\n"
-        "    hf_hub_download(\n"
-        "        repo_id=HF_REPO,\n"
-        "        filename=filename,\n"
-        "        local_dir='.',\n"
-        "    )\n"
+        "for filename in ['pytorch_model.bin', 'config.json', 'tokenizer.json']:\n"
+        "    hf_hub_download(repo_id=HF_REPO, filename=filename, local_dir='.')\n"
         "    print(f'  Downloaded {filename}')\n"
         "\n"
-        "print(f'\\nModel ready from {HF_REPO}')"
+        "print(f'Model ready from {HF_REPO}')"
     ))
 
     # ── Chat ───────────────────────────────────────────────────────
@@ -452,7 +464,7 @@ def build_use():
         "import torch\n"
         "\n"
         "engine = GuppyInference(\n"
-        "    'checkpoints/best_model.pt', 'data/tokenizer.json',\n"
+        "    'pytorch_model.bin', 'tokenizer.json',\n"
         "    device='cuda' if torch.cuda.is_available() else 'cpu'\n"
         ")\n"
         "\n"

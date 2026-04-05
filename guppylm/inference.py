@@ -17,10 +17,35 @@ class GuppyInference:
         self.tokenizer = Tokenizer.from_file(tokenizer_path)
 
         ckpt = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
-        valid_fields = {f.name for f in GuppyConfig.__dataclass_fields__.values()}
-        self.config = GuppyConfig(**{k: v for k, v in ckpt["config"].items() if k in valid_fields})
+
+        # Support both HF standard (state_dict only) and legacy (full checkpoint) format
+        if "model_state_dict" in ckpt:
+            # Legacy format: {config, model_state_dict, ...}
+            valid_fields = {f.name for f in GuppyConfig.__dataclass_fields__.values()}
+            self.config = GuppyConfig(**{k: v for k, v in ckpt["config"].items() if k in valid_fields})
+            state_dict = ckpt["model_state_dict"]
+        else:
+            # HF standard format: state_dict only, config from separate file
+            import os
+            config_path = os.path.join(os.path.dirname(checkpoint_path), "config.json")
+            with open(config_path) as f:
+                cfg = json.load(f)
+            self.config = GuppyConfig(
+                vocab_size=cfg["vocab_size"],
+                max_seq_len=cfg["max_position_embeddings"],
+                d_model=cfg["hidden_size"],
+                n_layers=cfg["num_hidden_layers"],
+                n_heads=cfg["num_attention_heads"],
+                ffn_hidden=cfg["intermediate_size"],
+                dropout=cfg.get("hidden_dropout_prob", 0.1),
+                pad_id=cfg.get("pad_token_id", 0),
+                bos_id=cfg.get("bos_token_id", 1),
+                eos_id=cfg.get("eos_token_id", 2),
+            )
+            state_dict = ckpt
+
         self.model = GuppyLM(self.config).to(self.device)
-        filtered = {k: v for k, v in ckpt["model_state_dict"].items() if k in self.model.state_dict()}
+        filtered = {k: v for k, v in state_dict.items() if k in self.model.state_dict()}
         self.model.load_state_dict(filtered)
         self.model.eval()
 

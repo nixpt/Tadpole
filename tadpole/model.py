@@ -1,5 +1,5 @@
 """
-GuppyLM — a tiny fish brain.
+Tadpole — a tiny technical assistant.
 
 Vanilla transformer: multi-head attention, ReLU FFN, LayerNorm, learned positional embeddings.
 No GQA, no SwiGLU, no parallel residual, no RoPE. As simple as it gets.
@@ -9,7 +9,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .config import GuppyConfig
+from .config import TadpoleConfig
 
 
 class Attention(nn.Module):
@@ -59,8 +59,8 @@ class Block(nn.Module):
         return x
 
 
-class GuppyLM(nn.Module):
-    def __init__(self, config: GuppyConfig):
+class Tadpole(nn.Module):
+    def __init__(self, config: TadpoleConfig):
         super().__init__()
         self.config = config
 
@@ -126,4 +126,4 @@ class GuppyLM(nn.Module):
 
     def param_summary(self):
         total, _ = self.param_count()
-        return f"GuppyLM: {total:,} params ({total/1e6:.1f}M)"
+        return f"Tadpole: {total:,} params ({total/1e6:.1f}M)"

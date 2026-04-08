@@ -49,7 +49,7 @@ def export_and_push(checkpoint_path, tokenizer_path, repo_id, token, local_dir="
     # 2. config.json — model architecture only
     config_path = os.path.join(local_dir, "config.json")
     hf_config = {
-        "model_type": "guppylm",
+        "model_type": "tadpole",
         "architectures": ["GuppyLM"],
         "vocab_size": config["vocab_size"],
         "max_position_embeddings": config["max_seq_len"],

@@ -1,10 +1,10 @@
-"""GuppyLM configuration."""
+"""Tadpole configuration."""
 
 from dataclasses import dataclass
 
 
 @dataclass
-class GuppyConfig:
+class TadpoleConfig:
     vocab_size: int = 4096
     max_seq_len: int = 128
     d_model: int = 384

@@ -34,7 +34,7 @@ class GuppyInference:
             with open(config_path) as f:
                 cfg = json.load(f)
             # Support both HF standard keys and our own keys
-            self.config = GuppyConfig(
+            self.config = TadpoleConfig(
                 vocab_size=cfg.get("vocab_size", 4096),
                 max_seq_len=cfg.get("max_position_embeddings", cfg.get("max_seq_len", 128)),
                 d_model=cfg.get("hidden_size", cfg.get("d_model", 384)),
@@ -47,19 +47,19 @@ class GuppyInference:
                 eos_id=cfg.get("eos_token_id", cfg.get("eos_id", 2)),
             )
         elif isinstance(ckpt, dict) and "config" in ckpt:
-            valid_fields = {f.name for f in GuppyConfig.__dataclass_fields__.values()}
-            self.config = GuppyConfig(**{k: v for k, v in ckpt["config"].items() if k in valid_fields})
+            valid_fields = {f.name for f in TadpoleConfig.__dataclass_fields__.values()}
+            self.config = TadpoleConfig(**{k: v for k, v in ckpt["config"].items() if k in valid_fields})
         else:
             print("Warning: No config found, using defaults")
-            self.config = GuppyConfig()
+            self.config = TadpoleConfig()
 
-        self.model = GuppyLM(self.config).to(self.device)
+        self.model = Tadpole(self.config).to(self.device)
         filtered = {k: v for k, v in state_dict.items() if k in self.model.state_dict()}
         self.model.load_state_dict(filtered)
         self.model.eval()
 
         total, _ = self.model.param_count()
-        print(f"GuppyLM loaded: {total/1e6:.1f}M params")
+        print(f"Tadpole loaded: {total/1e6:.1f}M params")
 
     def chat_completion(self, messages, temperature=0.7, max_tokens=64,
                         top_k=50, **kwargs):
@@ -97,21 +97,21 @@ class GuppyInference:
 
 def main():
     import argparse
-    p = argparse.ArgumentParser(description="Chat with Guppy")
+    p = argparse.ArgumentParser(description="Chat with Tadpole")
     p.add_argument("--checkpoint", default="checkpoints/best_model.pt")
     p.add_argument("--tokenizer", default="data/tokenizer.json")
     p.add_argument("--device", default="cpu")
     p.add_argument("--prompt", "-p", help="Single prompt mode: ask one question and exit")
     args = p.parse_args()
 
-    engine = GuppyInference(args.checkpoint, args.tokenizer, args.device)
+    engine = TadpoleInference(args.checkpoint, args.tokenizer, args.device)
 
     if args.prompt:
         result = engine.chat_completion([{"role": "user", "content": args.prompt}])
         print(result["choices"][0]["message"]["content"])
         return
 
-    print("\nGuppy Chat (type 'quit' to exit)")
+    print("\nTadpole Chat (type 'quit' to exit)")
     while True:
         inp = input("\nYou> ").strip()
         if inp.lower() in ("quit", "exit", "q"):
@@ -119,7 +119,7 @@ def main():
         result = engine.chat_completion([{"role": "user", "content": inp}])
         msg = result["choices"][0]["message"]
         if msg.get("content"):
-            print(f"Guppy> {msg['content']}")
+            print(f"Tadpole> {msg['content']}")
 
 
 if __name__ == "__main__":

@@ -53,3 +53,4 @@ Desktop.ini
 *.log
 *.tmp
 *.bak
+# Generated datasets are in data/ (gitignored)

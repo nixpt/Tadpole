@@ -1,0 +1,82 @@
+{
+  "volume-create": {
+    "help": "Create volume\n\nUsage: rama-core volume-create <NAME> [SIZE] [MOUNT] [ALGORITHM] [PRESET]\n\nArguments:\n  <NAME>       \n  [SIZE]       \n  [MOUNT]      \n  [ALGORITHM]  \n  [PRESET]     \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 13,
+    "chars": 216
+  },
+  "volume-list": {
+    "help": "List volumes\n\nUsage: rama-core volume-list\n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 6,
+    "chars": 78
+  },
+  "volume-backup": {
+    "help": "Backup volume\n\nUsage: rama-core volume-backup <NAME> [TARGET]\n\nArguments:\n  <NAME>    \n  [TARGET]  \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 10,
+    "chars": 135
+  },
+  "volume-restore": {
+    "help": "Restore volume\n\nUsage: rama-core volume-restore <NAME> <SOURCE>\n\nArguments:\n  <NAME>    \n  <SOURCE>  \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 10,
+    "chars": 137
+  },
+  "create": {
+    "help": "Create a zram device\n\nUsage: rama-core create [DEVICE] <SIZE> [ALGORITHM] [MOUNT] [PRIORITY]\n\nArguments:\n  [DEVICE]     \n  <SIZE>       \n  [ALGORITHM]  \n  [MOUNT]      \n  [PRIORITY]   \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 13,
+    "chars": 220
+  },
+  "reset": {
+    "help": "Reset (destroy) a zram device\n\nUsage: rama-core reset <DEVICE>\n\nArguments:\n  <DEVICE>  \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 9,
+    "chars": 123
+  },
+  "list": {
+    "help": "List zram devices\n\nUsage: rama-core list [OPTIONS]\n\nOptions:\n      --json       Output as JSON array\n  -b, --bytes      Print sizes in raw bytes instead of human-readable\n      --no-header  Suppress the header row\n  -h, --help       Print help\n",
+    "lines": 9,
+    "chars": 244
+  },
+  "stats": {
+    "help": "Show device statistics\n\nUsage: rama-core stats [DEVICE]\n\nArguments:\n  [DEVICE]  \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 9,
+    "chars": 116
+  },
+  "algorithms": {
+    "help": "Show available compression algorithms\n\nUsage: rama-core algorithms\n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 6,
+    "chars": 102
+  },
+  "workspace-create": {
+    "help": "Create a workspace (overlayFS on zram + tmpfs build dir)\n\nUsage: rama-core workspace-create [OPTIONS] <SOURCE> [MOUNT] [NAME]\n\nArguments:\n  <SOURCE>  \n  [MOUNT]   \n  [NAME]    \n\nOptions:\n      --backing-dir <BACKING_DIR>    Directory for overlay upper/work dirs (default: /var/tmp/rama-workspaces)\n  -i, --isolated                     \n      --memory-limit <MEMORY_LIMIT>  \n      --cpu-limit <CPU_LIMIT>        \n      --build-dir <BUILD_DIR>        Build output dir name (auto-detected: target for Rust/Maven, build for CMake/Meson)\n      --build-size <BUILD_SIZE>      Size of the tmpfs mounted at the build dir (default: 8G)\n      --zpu-pool <ZPU_POOL>          Mount build dir on a ZPU pool (e.g. /zpu) for compressed build artifacts\n  -h, --help                         Print help\n",
+    "lines": 18,
+    "chars": 785
+  },
+  "workspace-destroy": {
+    "help": "Destroy a workspace\n\nUsage: rama-core workspace-destroy <TARGET>\n\nArguments:\n  <TARGET>  \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 9,
+    "chars": 125
+  },
+  "workspace-list": {
+    "help": "List workspaces\n\nUsage: rama-core workspace-list\n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 6,
+    "chars": 84
+  },
+  "workspace-info": {
+    "help": "Show detailed info about a workspace\n\nUsage: rama-core workspace-info [OPTIONS] <NAME>\n\nArguments:\n  <NAME>  Workspace name\n\nOptions:\n      --json  Output as JSON\n  -h, --help  Print help\n",
+    "lines": 10,
+    "chars": 188
+  },
+  "dev-create": {
+    "help": "Create a RAM-backed dev environment\n\nUsage: rama-core dev-create [OPTIONS] --source <SOURCE>\n\nOptions:\n  -s, --source <SOURCE>  \n  -n, --name <NAME>      \n  -m, --mount <MOUNT>    \n  -z, --zram <ZRAM>      \n  -t, --tmpfs            \n  -S, --size <SIZE>      \n      --mode <MODE>      \n      --upper <UPPER>    \n      --work <WORK>      \n  -n, --namespace        \n  -h, --help             Print help\n",
+    "lines": 16,
+    "chars": 399
+  },
+  "dev-destroy": {
+    "help": "Destroy dev environment\n\nUsage: rama-core dev-destroy <TARGET>\n\nArguments:\n  <TARGET>  \n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 9,
+    "chars": 123
+  },
+  "dev-list": {
+    "help": "List dev environments\n\nUsage: rama-core dev-list\n\nOptions:\n  -h, --help  Print help\n",
+    "lines": 6,
+    "chars": 84
+  }
+}

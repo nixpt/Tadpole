@@ -1,0 +1,127 @@
+{
+  "rama_core": {
+    "priority": 1,
+    "topics": [
+      "volumes",
+      "zram",
+      "workspace",
+      "compression",
+      "config"
+    ],
+    "files": [
+      {
+        "path": "rama/README.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/README.md",
+        "lines": 178,
+        "chars": 4902,
+        "exists": true
+      },
+      {
+        "path": "rama/CLAUDE.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/CLAUDE.md",
+        "lines": 135,
+        "chars": 5437,
+        "exists": true
+      },
+      {
+        "path": "rama/QUICKREF.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/QUICKREF.md",
+        "lines": 157,
+        "chars": 3490,
+        "exists": true
+      }
+    ]
+  },
+  "rama_docs": {
+    "priority": 2,
+    "topics": [
+      "architecture",
+      "implementation"
+    ],
+    "files": [
+      {
+        "path": "rama/doc/rama.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/doc/rama.md",
+        "lines": 252,
+        "chars": 4990,
+        "exists": true
+      },
+      {
+        "path": "rama/doc/CODEBASE_MAP.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/doc/CODEBASE_MAP.md",
+        "lines": 330,
+        "chars": 13356,
+        "exists": true
+      },
+      {
+        "path": "rama/doc/IMPLEMENTATION.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/doc/IMPLEMENTATION.md",
+        "lines": 186,
+        "chars": 4190,
+        "exists": true
+      }
+    ]
+  },
+  "rama_planning": {
+    "priority": 3,
+    "topics": [
+      "zpu",
+      "inference"
+    ],
+    "files": [
+      {
+        "path": "rama/zpu_vcpu_ram_gpu_lanes_spec.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/zpu_vcpu_ram_gpu_lanes_spec.md",
+        "lines": 997,
+        "chars": 22873,
+        "exists": true
+      },
+      {
+        "path": "rama/planning/ZPU_IMPLEMENTATION_PLAN.md",
+        "full_path": "/home/nixp/WORKSPACE/rama/planning/ZPU_IMPLEMENTATION_PLAN.md",
+        "lines": 251,
+        "chars": 11983,
+        "exists": true
+      }
+    ]
+  },
+  "exosphere_core": {
+    "priority": 2,
+    "topics": [
+      "exosphere",
+      "integration"
+    ],
+    "files": [
+      {
+        "path": "exosphere/CLAUDE.md",
+        "full_path": "/home/nixp/WORKSPACE/exosphere/CLAUDE.md",
+        "lines": 62,
+        "chars": 3133,
+        "exists": true
+      }
+    ]
+  },
+  "squadron_tools": {
+    "priority": 3,
+    "topics": [
+      "squadron",
+      "agent-tools"
+    ],
+    "files": [
+      {
+        "path": "squadron/README.md",
+        "full_path": "/home/nixp/WORKSPACE/squadron/README.md",
+        "lines": 88,
+        "chars": 3235,
+        "exists": true
+      },
+      {
+        "path": "squadron/doc/TOOLS.md",
+        "full_path": "/home/nixp/WORKSPACE/squadron/doc/TOOLS.md",
+        "lines": 529,
+        "chars": 19712,
+        "exists": true
+      }
+    ]
+  }
+}

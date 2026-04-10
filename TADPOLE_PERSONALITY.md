@@ -236,10 +236,4 @@ Each response should:
 
 ## Training Data Sources
 
-- `/home/nixp/WORKSPACE/rama/README.md` — overview
-- `/home/nixp/WORKSPACE/rama/CLAUDE.md` — architecture
-- `/home/nixp/WORKSPACE/rama/src/rama-core/src/cli/commands.rs` — command definitions
-- `/home/nixp/WORKSPACE/rama/src/rama-zpu/STATE.md` — zpu status
-- rama command help text (`rama <cmd> --help`)
-- Common troubleshooting scenarios
-- Compression benchmarks and recommendations
+

@@ -44,6 +44,7 @@ def main():
         print("  python -m tadpole sdna         Show an SDNA v2 snapshot of the cell")
         print("  python -m tadpole species      Run the three-cell file task demo")
         print("  python -m tadpole monkey       Run the 16-cell monkey species demo")
+        print("  python -m tadpole species-chat Chat with a Symbiome species")
         print("  python -m tadpole download     Download base model (upstream reference)")
         return
 
@@ -133,6 +134,43 @@ def main():
         species = DigitalMonkeySpecies.default(args.cells)
         result = species.process_text_file(args.input, args.output, task=args.task)
         print(result.output_path)
+
+    elif cmd == "species-chat":
+        from symbiome.biology import DigitalMonkeySpecies, TriCellSpecies
+        from .inference import GuppyInference
+        import argparse
+
+        parser = argparse.ArgumentParser(prog="python -m tadpole species-chat")
+        parser.add_argument("--species", choices=["tri-cell", "monkey"], default="monkey")
+        parser.add_argument("--cells", type=int, default=16, choices=[16, 32, 64, 128], help="Cell count for monkey")
+        parser.add_argument("--checkpoint", default="checkpoints/best_model.pt")
+        parser.add_argument("--tokenizer", default="data/tokenizer.json")
+        parser.add_argument("--device", default="cpu")
+        parser.add_argument("--prompt", "-p", help="Single prompt mode: ask one question and exit")
+        args = parser.parse_args(sys.argv[1:])
+
+        if args.species == "tri-cell":
+            species = TriCellSpecies.default()
+        elif args.cells in (16, 32):
+            species = DigitalMonkeySpecies.default(args.cells)
+        else:
+            species = DigitalMonkeySpecies.stress_test(args.cells)
+
+        engine = GuppyInference(args.checkpoint, args.tokenizer, args.device)
+        if args.prompt:
+            result = engine.chat_completion_for_species(species, [{"role": "user", "content": args.prompt}])
+            print(result["choices"][0]["message"]["content"])
+            return
+
+        print("\nSpecies Chat (type 'quit' to exit)")
+        while True:
+            inp = input("\nYou> ").strip()
+            if inp.lower() in ("quit", "exit", "q"):
+                break
+            result = engine.chat_completion_for_species(species, [{"role": "user", "content": inp}])
+            msg = result["choices"][0]["message"]
+            if msg.get("content"):
+                print(f"{species.name}> {msg['content']}")
 
     else:
         print(f"Unknown command: {cmd}")

@@ -19,6 +19,10 @@ class TadpoleConfig:
     eos_id: int = 2           # <|im_end|>
 
 
+# Backward-compatible alias used by the original GuppyLM code path.
+GuppyConfig = TadpoleConfig
+
+
 @dataclass
 class TrainConfig:
     batch_size: int = 32

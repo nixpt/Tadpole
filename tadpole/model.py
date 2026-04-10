@@ -127,3 +127,7 @@ class Tadpole(nn.Module):
     def param_summary(self):
         total, _ = self.param_count()
         return f"Tadpole: {total:,} params ({total/1e6:.1f}M)"
+
+
+# Backward-compatible alias used by the original GuppyLM chat/training code.
+GuppyLM = Tadpole

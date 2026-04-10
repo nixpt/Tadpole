@@ -7,7 +7,7 @@ import uuid
 import torch
 from tokenizers import Tokenizer
 
-from .config import GuppyConfig
+from .config import GuppyConfig, TadpoleConfig
 from .model import GuppyLM
 
 
@@ -85,6 +85,11 @@ class GuppyInference:
             }],
         }
 
+    def chat_completion_for_species(self, species, messages, temperature=0.7, max_tokens=64, top_k=50):
+        prompt = species_chat_prompt(species)
+        species_messages = [{"role": "system", "content": prompt}] + list(messages)
+        return self.chat_completion(species_messages, temperature=temperature, max_tokens=max_tokens, top_k=top_k)
+
     def _format_prompt(self, messages):
         parts = []
         for msg in messages:
@@ -93,6 +98,38 @@ class GuppyInference:
             parts.append(f"<|im_start|>{role}\n{content}<|im_end|>")
         parts.append("<|im_start|>assistant\n")
         return "\n".join(parts)
+
+
+def species_chat_prompt(species) -> str:
+    name = getattr(species, "name", species.__class__.__name__)
+    cells = list(getattr(species, "cells", []))
+    if cells:
+        cell_count = len(cells)
+    else:
+        cell_count = sum(1 for attr in ("brain", "reader", "writer") if hasattr(species, attr))
+
+    lines = [
+        f"You are the Symbiome species {name}.",
+        f"Cell count: {cell_count}.",
+    ]
+
+    role_lines = []
+    if hasattr(species, "brain"):
+        role_lines.append(f"brain={getattr(getattr(species.brain, 'genome', None), 'primary_skill', 'unknown')}")
+    for label, attr in (
+        ("readers", "read_text"),
+        ("writers", "write_text"),
+        ("memory", "remember"),
+        ("guards", "validate"),
+        ("motor", "execute"),
+    ):
+        if hasattr(species, label):
+            role_lines.append(f"{label}={len(getattr(species, label))}")
+    if role_lines:
+        lines.append("Roles: " + ", ".join(role_lines))
+
+    lines.append("Answer in character as this species. Be concise, grounded in its anatomy, and describe internal state when useful.")
+    return "\n".join(lines)
 
 
 def main():

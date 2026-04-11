@@ -1,35 +1,8 @@
 """Entry point for: python -m tadpole"""
 
-import os
 import sys
 
-CHECKPOINT_PATH = "checkpoints/best_model.pt"
-TOKENIZER_PATH = "data/tokenizer.json"
-# Note: Original upstream model repo (not maintained)
-HF_REPO = "arman-bd/guppylm-9M"
-HF_BASE = f"https://huggingface.co/{HF_REPO}/resolve/main"
-
-
-def download_model():
-    """Download base model from upstream (GuppyLM - for reference only)."""
-    import urllib.request
-
-    files = [
-        (f"{HF_BASE}/pytorch_model.bin", CHECKPOINT_PATH),
-        (f"{HF_BASE}/tokenizer.json", TOKENIZER_PATH),
-        (f"{HF_BASE}/config.json", "checkpoints/config.json"),
-    ]
-
-    print(f"Downloading upstream model from {HF_REPO}...\n")
-    for url, dest in files:
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-        name = os.path.basename(dest)
-        print(f"  {name}...", end=" ", flush=True)
-        urllib.request.urlretrieve(url, dest)
-        size_mb = os.path.getsize(dest) / 1e6
-        print(f"{size_mb:.1f} MB")
-
-    print("\nDone! Run: python -m tadpole chat")
+from .chat_assets import download_model, resolve_chat_assets
 
 
 def main():
@@ -53,7 +26,14 @@ def main():
 
     if cmd == "prepare":
         from .prepare_data import prepare
-        prepare()
+        import argparse
+
+        parser = argparse.ArgumentParser(prog="python -m tadpole prepare")
+        parser.add_argument("--source", choices=["synthetic", "mixed"], default="synthetic")
+        parser.add_argument("--mixed-pack-dir", default="data/hf_mixed_starter_pack")
+        parser.add_argument("--samples", type=int, default=60000)
+        args = parser.parse_args(sys.argv[1:])
+        prepare(n_samples=args.samples, source=args.source, mixed_pack_dir=args.mixed_pack_dir)
 
     elif cmd == "train":
         from .train import train
@@ -63,14 +43,6 @@ def main():
         download_model()
 
     elif cmd == "chat":
-        if not os.path.exists(CHECKPOINT_PATH):
-            print("Model not found. Train your own:\n")
-            print("  python -m tadpole prepare")
-            print("  python -m tadpole train\n")
-            print("Or download upstream base model (reference only):\n")
-            print("  python -m tadpole download")
-            return
-
         from .inference import main as inference_main
         inference_main()
 
@@ -128,10 +100,10 @@ def main():
         parser.add_argument("--input", required=True, help="Input text file")
         parser.add_argument("--output", required=True, help="Output text file")
         parser.add_argument("--task", default="copy", choices=["copy", "annotate", "uppercase"])
-        parser.add_argument("--cells", type=int, default=16, choices=[16, 32], help="Cell count")
+        parser.add_argument("--cells", type=int, default=16, choices=[16, 32, 128], help="Cell count")
         args = parser.parse_args(sys.argv[1:])
 
-        species = DigitalMonkeySpecies.default(args.cells)
+        species = DigitalMonkeySpecies.training_layout(args.cells) if args.cells == 128 else DigitalMonkeySpecies.default(args.cells)
         result = species.process_text_file(args.input, args.output, task=args.task)
         print(result.output_path)
 
@@ -151,12 +123,15 @@ def main():
 
         if args.species == "tri-cell":
             species = TriCellSpecies.default()
+        elif args.cells == 128:
+            species = DigitalMonkeySpecies.training_layout(args.cells)
         elif args.cells in (16, 32):
             species = DigitalMonkeySpecies.default(args.cells)
         else:
             species = DigitalMonkeySpecies.stress_test(args.cells)
 
-        engine = GuppyInference(args.checkpoint, args.tokenizer, args.device)
+        checkpoint_path, tokenizer_path = resolve_chat_assets(args.checkpoint, args.tokenizer)
+        engine = GuppyInference(checkpoint_path, tokenizer_path, args.device)
         if args.prompt:
             result = engine.chat_completion_for_species(species, [{"role": "user", "content": args.prompt}])
             print(result["choices"][0]["message"]["content"])

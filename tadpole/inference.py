@@ -3,12 +3,23 @@
 import json
 import time
 import uuid
+from collections import OrderedDict
+from dataclasses import dataclass
 
 import torch
 from tokenizers import Tokenizer
 
+from .chat_assets import resolve_chat_assets
 from .config import GuppyConfig, TadpoleConfig
-from .model import GuppyLM
+from .model import GuppyLM, Tadpole
+
+
+@dataclass(frozen=True)
+class SpeciesCellCluster:
+    role: str
+    count: int
+    primary_skill: str
+    notes: tuple[str, ...] = ()
 
 
 class GuppyInference:
@@ -86,8 +97,22 @@ class GuppyInference:
         }
 
     def chat_completion_for_species(self, species, messages, temperature=0.7, max_tokens=64, top_k=50):
-        prompt = species_chat_prompt(species)
-        species_messages = [{"role": "system", "content": prompt}] + list(messages)
+        clusters = species_cell_clusters(species)
+        if len(clusters) <= 1:
+            prompt = species_chat_prompt(species)
+            return self._chat_with_system_prompt(prompt, messages, temperature, max_tokens, top_k)
+
+        role_outputs = []
+        for cluster in clusters:
+            role_prompt = species_role_prompt(species, cluster)
+            result = self._chat_with_system_prompt(role_prompt, messages, temperature, max_tokens, top_k)
+            role_outputs.append((cluster.role, result["choices"][0]["message"]["content"]))
+
+        synthesis_prompt = species_synthesis_prompt(species, clusters, role_outputs)
+        return self._chat_with_system_prompt(synthesis_prompt, messages, temperature, max_tokens, top_k)
+
+    def _chat_with_system_prompt(self, system_prompt, messages, temperature=0.7, max_tokens=64, top_k=50):
+        species_messages = [{"role": "system", "content": system_prompt}] + list(messages)
         return self.chat_completion(species_messages, temperature=temperature, max_tokens=max_tokens, top_k=top_k)
 
     def _format_prompt(self, messages):
@@ -102,33 +127,137 @@ class GuppyInference:
 
 def species_chat_prompt(species) -> str:
     name = getattr(species, "name", species.__class__.__name__)
-    cells = list(getattr(species, "cells", []))
-    if cells:
-        cell_count = len(cells)
-    else:
-        cell_count = sum(1 for attr in ("brain", "reader", "writer") if hasattr(species, attr))
+    clusters = species_cell_clusters(species)
+    cell_count = species_cell_count(species, clusters)
 
     lines = [
         f"You are the Symbiome species {name}.",
         f"Cell count: {cell_count}.",
     ]
 
-    role_lines = []
-    if hasattr(species, "brain"):
-        role_lines.append(f"brain={getattr(getattr(species.brain, 'genome', None), 'primary_skill', 'unknown')}")
-    for label, attr in (
-        ("readers", "read_text"),
-        ("writers", "write_text"),
-        ("memory", "remember"),
-        ("guards", "validate"),
-        ("motor", "execute"),
-    ):
-        if hasattr(species, label):
-            role_lines.append(f"{label}={len(getattr(species, label))}")
-    if role_lines:
+    if clusters:
+        role_lines = [f"{cluster.role}={cluster.count}" for cluster in clusters]
         lines.append("Roles: " + ", ".join(role_lines))
 
+    legacy_roles = species_legacy_role_summary(species)
+    if legacy_roles:
+        lines.append("Legacy roles: " + ", ".join(legacy_roles))
+
+    sources = species_dataset_sources(species)
+    if sources:
+        lines.append("Training sources: " + ", ".join(sources))
+
+    lines.append("Neuron rule: every non-CNS cell keeps only its task and report_to_cns.")
+
     lines.append("Answer in character as this species. Be concise, grounded in its anatomy, and describe internal state when useful.")
+    return "\n".join(lines)
+
+
+def species_cell_clusters(species) -> list[SpeciesCellCluster]:
+    cells = list(getattr(species, "cells", []))
+    if not cells:
+        legacy_clusters = []
+        if hasattr(species, "brain"):
+            legacy_clusters.append(SpeciesCellCluster(role="brain", count=1, primary_skill="brain"))
+        if hasattr(species, "reader"):
+            legacy_clusters.append(SpeciesCellCluster(role="reader", count=1, primary_skill="read_text"))
+        if hasattr(species, "writer"):
+            legacy_clusters.append(SpeciesCellCluster(role="writer", count=1, primary_skill="write_text"))
+        return legacy_clusters
+
+    grouped: "OrderedDict[str, list[object]]" = OrderedDict()
+    for cell in cells:
+        genome = getattr(cell, "genome", None)
+        role = getattr(genome, "primary_skill", None) or getattr(cell, "name", "cell")
+        grouped.setdefault(role, []).append(cell)
+
+    clusters = []
+    for role, role_cells in grouped.items():
+        first = role_cells[0]
+        genome = getattr(first, "genome", None)
+        notes = tuple(getattr(genome, "notes", []) or ())
+        clusters.append(
+            SpeciesCellCluster(
+                role=role,
+                count=len(role_cells),
+                primary_skill=getattr(genome, "primary_skill", role),
+                notes=notes,
+            )
+        )
+    return clusters
+
+
+def species_cell_count(species, clusters=None) -> int:
+    if clusters is None:
+        clusters = species_cell_clusters(species)
+    if getattr(species, "cells", None):
+        return len(list(getattr(species, "cells", [])))
+    return sum(cluster.count for cluster in clusters)
+
+
+def species_dataset_sources(species) -> list[str]:
+    sources = []
+    seen = set()
+    for cell in list(getattr(species, "cells", [])):
+        genome = getattr(cell, "genome", None)
+        for note in getattr(genome, "notes", []) or []:
+            if note.startswith("dataset="):
+                source = note.split("=", 1)[1]
+                if source not in seen:
+                    seen.add(source)
+                    sources.append(source)
+    return sources
+
+
+def species_legacy_role_summary(species) -> list[str]:
+    summary = []
+    if hasattr(species, "brain"):
+        summary.append(f"brain={getattr(getattr(species.brain, 'genome', None), 'primary_skill', 'unknown')}")
+    for label, singular_attr, plural_attr in (
+        ("reader", "reader", "readers"),
+        ("writer", "writer", "writers"),
+        ("memory", "memory_cells", "memory_cells"),
+        ("guard", "guard_cells", "guard_cells"),
+        ("motor", "motor_cells", "motor_cells"),
+    ):
+        if hasattr(species, plural_attr):
+            summary.append(f"{plural_attr}={len(getattr(species, plural_attr))}")
+        elif hasattr(species, singular_attr):
+            if hasattr(species, plural_attr):
+                summary.append(f"{plural_attr}={len(getattr(species, plural_attr))}")
+            else:
+                cell = getattr(species, singular_attr)
+                genome = getattr(cell, "genome", None)
+                summary.append(f"{label}={getattr(genome, 'primary_skill', label)}")
+    return summary
+
+
+def species_role_prompt(species, cluster: SpeciesCellCluster) -> str:
+    name = getattr(species, "name", species.__class__.__name__)
+    lines = [
+        f"You are the {cluster.role} cell cluster of {name}.",
+        f"Primary skill: {cluster.primary_skill}.",
+        f"Cell count: {cluster.count}.",
+        "Respond only from this cluster's perspective.",
+    ]
+    if cluster.notes:
+        lines.append("Cell notes: " + ", ".join(cluster.notes[:4]))
+    return "\n".join(lines)
+
+
+def species_synthesis_prompt(species, clusters, role_outputs) -> str:
+    name = getattr(species, "name", species.__class__.__name__)
+    lines = [
+        f"You are the control cell of {name}.",
+        "Merge the specialist cluster notes below into one answer.",
+        "Prefer the most grounded answer and keep it concise.",
+        "",
+    ]
+    for role, text in role_outputs:
+        lines.append(f"[{role}] {text}")
+    if clusters:
+        lines.append("")
+        lines.append("Cluster summary: " + ", ".join(f"{cluster.role}={cluster.count}" for cluster in clusters))
     return "\n".join(lines)
 
 
@@ -141,7 +270,8 @@ def main():
     p.add_argument("--prompt", "-p", help="Single prompt mode: ask one question and exit")
     args = p.parse_args()
 
-    engine = TadpoleInference(args.checkpoint, args.tokenizer, args.device)
+    checkpoint_path, tokenizer_path = resolve_chat_assets(args.checkpoint, args.tokenizer)
+    engine = GuppyInference(checkpoint_path, tokenizer_path, args.device)
 
     if args.prompt:
         result = engine.chat_completion([{"role": "user", "content": args.prompt}])

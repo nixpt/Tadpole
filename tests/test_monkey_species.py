@@ -15,6 +15,21 @@ class DigitalMonkeySpeciesTests(unittest.TestCase):
         self.assertGreaterEqual(len(species.readers), 3)
         self.assertGreaterEqual(len(species.writers), 3)
 
+    def test_training_layout_uses_dataset_roles(self):
+        species = DigitalMonkeySpecies.training_layout(128)
+
+        self.assertEqual(len(species.cells), 128)
+        self.assertEqual(species.name, "digital-monkey-cns-128")
+        self.assertEqual(species.brain.genome.primary_skill, "cns")
+        self.assertIn("dataset=Roman1111111/claude-opus-4.6-10000x", species.brain.genome.notes)
+        self.assertGreaterEqual(len(species._cells_with_skill("cns")), 8)
+        self.assertGreaterEqual(len(species._cells_with_skill("sensory_language")), 18)
+        self.assertGreaterEqual(len(species._cells_with_skill("memory_write")), 12)
+        self.assertGreaterEqual(len(species._cells_with_skill("motor_response")), 20)
+        self.assertGreaterEqual(len(species._cells_with_skill("motor_action")), 14)
+        sensory = species._cells_with_skill("sensory_language")[0]
+        self.assertEqual(sensory.genome.skills, ["sensory_language", "report_to_cns"])
+
     def test_copy_text_file(self):
         species = DigitalMonkeySpecies.default()
 

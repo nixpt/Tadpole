@@ -16,10 +16,12 @@ class SpeciesChatTests(unittest.TestCase):
         self.assertIn("brain=brain", prompt)
 
     def test_monkey_species_chat_prompt_mentions_cell_count(self):
-        prompt = species_chat_prompt(DigitalMonkeySpecies.stress_test(128))
-        self.assertIn("digital-monkey-stress-128", prompt)
+        prompt = species_chat_prompt(DigitalMonkeySpecies.training_layout(128))
+        self.assertIn("digital-monkey-cns-128", prompt)
         self.assertIn("Cell count: 128", prompt)
-        self.assertIn("readers=", prompt)
+        self.assertIn("cns=", prompt)
+        self.assertIn("Training sources:", prompt)
+        self.assertIn("report_to_cns", prompt)
 
 
 if __name__ == "__main__":
